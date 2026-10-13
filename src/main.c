@@ -41,10 +41,30 @@ int main(int argc, char *argv[]){
     printf("\nAttempting to play track 1......\n");
     audio_play_track(my_playlist.tracks[0].filepath);
 
-    // Keep the program alive for 10 sec so the song can play
+    
     // later an interactive loop will be created for controls
-    for (int i = 0; i < 10; i++) {
-        sleep(1);
+    int current_index = 0;
+    audio_play_track(my_playlist.tracks[current_index].filepath);
+
+    char command;
+    printf("\nConntrols: [p]ause, [r]esume, [n]ext [q]uit\n");
+
+    while (1) {
+        printf("Command > ");
+        scanf(" %c", &command);
+
+        if (command == 'p') {
+            audio_pause_track();
+        } else if (command == 'r') {
+            audio_resume_track();
+        } else if (command == 'n') {
+            current_index = (current_index + 1) % my_playlist.count;
+            printf("\nSwitching to track [%d].... \n", current_index + 1);
+            audio_play_track(my_playlist.tracks[current_index].filepath);
+        } else if (command == 'q') {
+            printf("Quiting....\n");
+            break;
+        }
     }
 
     // Clean up memory

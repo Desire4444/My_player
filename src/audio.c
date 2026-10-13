@@ -51,3 +51,13 @@ void audio_engine_uninit(void){
         engine_initialized = 0;
     }
 }
+
+void audio_pause_track(void){
+    ma_sound_stop(&sound);
+    printf("\n[paused]\n");
+}
+
+void audio_resume_track(void){
+    ma_sound_start(&sound);
+    printf("\n[Resumed]\n");
+}

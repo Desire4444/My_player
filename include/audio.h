@@ -12,4 +12,10 @@ int audio_play_track(const char *filepath);
 // shutdown audio engine
 void audio_engine_uninit(void);
 
+// pause
+void audio_pause_track(void);
+
+// resume
+void audio_resume_track(void);
+
 #endif
