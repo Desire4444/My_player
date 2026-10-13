@@ -69,7 +69,7 @@ int main(int argc, char *argv[]){
             printf("\nSwitching to track [%d].... \n", current_index + 1);
             audio_play_track(my_playlist.tracks[current_index].filepath);
         } else {
-            printf("\nUnknown command Use: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n")
+            printf("\nUnknown command Use: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n");
         }
     }
 
