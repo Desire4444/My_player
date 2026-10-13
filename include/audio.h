@@ -1,0 +1,15 @@
+#ifndef AUDIO_H
+#define AUDIO_H
+
+#include "playlist.h"
+
+// initialize audio engine and output device
+int audio_engine_init(void);
+
+// plays a specific track from playlist
+int audio_play_track(const char *filepath);
+
+// shutdown audio engine
+void audio_engine_uninit(void);
+
+#endif

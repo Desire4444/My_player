@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "scanner.h"
 #include "playlist.h"
+#include "audio.h"
 
 int main(int argc, char *argv[]){
     printf("Initailizing local music player core......\n");
@@ -18,11 +20,37 @@ int main(int argc, char *argv[]){
 
     printf("-----Playlist Loaded-----");
     printf("Number of tracks found: %d\n", my_playlist.count);
+
+    if (my_playlist.count == 0) {
+        printf("No music track found in this directory.\n");
+        Playlist_free(&my_playlist);
+        return 0;
+    }
+
     for (int i = 0; i < my_playlist.count; i++) {
-        printf("[%d] %s\n    path: %s\n", i + 1, my_playlist.tracks[i].filename, my_playlist.tracks[i].filepath);
+        printf("[%d] %s\n", i + 1, my_playlist.tracks[i].filename);
+    }
+
+    // Initialize audio engine
+    if (!audio_engine_init()) {
+        Playlist_free(&my_playlist);
+        return 0;
+    }
+
+    // play first track as a test
+    printf("\nAttempting to play track 1......\n");
+    audio_play_track(my_playlist.tracks[0].filepath);
+
+    // Keep the program alive for 10 sec so the song can play
+    // later an interactive loop will be created for controls
+    for (int i = 0; i < 10; i++) {
+        sleep(1);
     }
 
     // Clean up memory
+    audio_engine_uninit();
     Playlist_free(&my_playlist);
+    printf("Exiting the player core cleanly.\n");
+
     return 0;
 }
