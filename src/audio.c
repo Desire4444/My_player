@@ -61,3 +61,8 @@ void audio_resume_track(void){
     ma_sound_start(&sound);
     printf("\n[Resumed]\n");
 }
+
+int audio_check_at_end(void){
+    if (!engine_initialized) return 0;
+    return ma_sound_at_end(&sound);
+}

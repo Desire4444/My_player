@@ -18,4 +18,7 @@ void audio_pause_track(void);
 // resume
 void audio_resume_track(void);
 
+// check if track playing has reached its end
+int audio_check_at_end(void);
+
 #endif

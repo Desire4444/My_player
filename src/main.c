@@ -1,4 +1,6 @@
+#include <poll.h>
 #include <stdio.h>
+#include <sys/poll.h>
 #include <unistd.h>
 #include "scanner.h"
 #include "playlist.h"
@@ -46,30 +48,54 @@ int main(int argc, char *argv[]){
     int current_index = 0;
     audio_play_track(my_playlist.tracks[current_index].filepath);
 
+    
+    // setup poll struchture to monitor sandard input
+    struct pollfd pfd;
+    pfd.fd = 0;
+    pfd.events = POLLIN;
+    
     char command;
     printf("\nConntrols: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n");
-
+    fflush(stdout);
+    
     while (1) {
-        printf("Command > ");
-        scanf(" %c", &command);
+        // poll stdin with 100 timout so we can check playback status in background
+        int ret = poll(&pfd, 1, 100);
 
-        if (command == 'p') {
-            audio_pause_track();
-        } else if (command == 'r') {
+        if (ret > 0) {
+
+            printf("Command > ");
+            scanf(" %c", &command);
+
+            if (command == 'p') {
+                audio_pause_track();
+            } else if (command == 'r') {
             audio_resume_track();
-        } else if (command == 'n') {
-            current_index = (current_index + 1) % my_playlist.count;
-            printf("\nSwitching to track [%d].... \n", current_index + 1);
-            audio_play_track(my_playlist.tracks[current_index].filepath);
-        } else if (command == 'q') {
-            printf("Quiting....\n");
-            break;
-        } else if (command == 'b') {
-            current_index = (current_index - 1 + my_playlist.count) % my_playlist.count;
-            printf("\nSwitching to track [%d].... \n", current_index + 1);
-            audio_play_track(my_playlist.tracks[current_index].filepath);
+            } else if (command == 'n') {
+                current_index = (current_index + 1) % my_playlist.count;
+                printf("\nSwitching to track [%d].... \n", current_index + 1);
+                audio_play_track(my_playlist.tracks[current_index].filepath);
+            } else if (command == 'q') {
+                printf("Quiting....\n");
+                break;
+            } else if (command == 'b') {
+                current_index = (current_index - 1 + my_playlist.count) % my_playlist.count;
+                printf("\nSwitching to track [%d].... \n", current_index + 1);
+                audio_play_track(my_playlist.tracks[current_index].filepath);
+            } else {
+                printf("\nUnknown command Use: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n");
+            }
+            printf("command > ");
+            fflush(stdout);
         } else {
-            printf("\nUnknown command Use: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n");
+            // No user input?....then check if the song finished naturally
+            if (audio_check_at_end()) {
+                current_index = (current_index + 1) % my_playlist.count;
+                printf("\n[Track Finished] Auto advancing to next track[%d]....\n", current_index + 1);
+                audio_play_track(my_playlist.tracks[current_index].filepath);
+                printf("Command > ");
+                fflush(stdout);
+            }
         }
     }
 
