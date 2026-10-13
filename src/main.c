@@ -5,6 +5,7 @@
 #include "scanner.h"
 #include "playlist.h"
 #include "audio.h"
+#include "tui.h"
 
 int main(int argc, char *argv[]){
     printf("Initailizing local music player core......\n");
@@ -46,6 +47,7 @@ int main(int argc, char *argv[]){
     
     // later an interactive loop will be created for controls
     int current_index = 0;
+    int is_playing = 1;
     audio_play_track(my_playlist.tracks[current_index].filepath);
 
     
@@ -54,9 +56,8 @@ int main(int argc, char *argv[]){
     pfd.fd = 0;
     pfd.events = POLLIN;
     
-    char command;
-    printf("\nConntrols: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n");
-    fflush(stdout);
+    // Draw tui dasboard
+    tui_draw_dashbard(&my_playlist, current_index, is_playing);
     
     while (1) {
         // poll stdin with 100 timout so we can check playback status in background
@@ -64,37 +65,47 @@ int main(int argc, char *argv[]){
 
         if (ret > 0) {
 
-            printf("Command > ");
+            char command;
             scanf(" %c", &command);
 
             if (command == 'p') {
                 audio_pause_track();
+                is_playing = 0;
             } else if (command == 'r') {
-            audio_resume_track();
+                audio_resume_track();
+                is_playing = 1;
             } else if (command == 'n') {
                 current_index = (current_index + 1) % my_playlist.count;
                 printf("\nSwitching to track [%d].... \n", current_index + 1);
                 audio_play_track(my_playlist.tracks[current_index].filepath);
+                is_playing = 1;
             } else if (command == 'q') {
+                printf(CLEAR_SCREEN MOVE_HOME);
                 printf("Quiting....\n");
                 break;
             } else if (command == 'b') {
                 current_index = (current_index - 1 + my_playlist.count) % my_playlist.count;
                 printf("\nSwitching to track [%d].... \n", current_index + 1);
                 audio_play_track(my_playlist.tracks[current_index].filepath);
+                is_playing = 1;
             } else {
                 printf("\nUnknown command Use: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n");
             }
             printf("command > ");
             fflush(stdout);
+
+            // redraw dashoard after every user action
+            tui_draw_dashbard(&my_playlist, current_index, is_playing);
         } else {
             // No user input?....then check if the song finished naturally
             if (audio_check_at_end()) {
                 current_index = (current_index + 1) % my_playlist.count;
                 printf("\n[Track Finished] Auto advancing to next track[%d]....\n", current_index + 1);
                 audio_play_track(my_playlist.tracks[current_index].filepath);
-                printf("Command > ");
-                fflush(stdout);
+                is_playing = 1;
+
+                // redraw dashboard on every auto advance
+                tui_draw_dashbard(&my_playlist, current_index, is_playing);
             }
         }
     }
