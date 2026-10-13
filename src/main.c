@@ -47,7 +47,7 @@ int main(int argc, char *argv[]){
     audio_play_track(my_playlist.tracks[current_index].filepath);
 
     char command;
-    printf("\nConntrols: [p]ause, [r]esume, [n]ext [q]uit\n");
+    printf("\nConntrols: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n");
 
     while (1) {
         printf("Command > ");
@@ -64,6 +64,12 @@ int main(int argc, char *argv[]){
         } else if (command == 'q') {
             printf("Quiting....\n");
             break;
+        } else if (command == 'b') {
+            current_index = (current_index - 1 + my_playlist.count) % my_playlist.count;
+            printf("\nSwitching to track [%d].... \n", current_index + 1);
+            audio_play_track(my_playlist.tracks[current_index].filepath);
+        } else {
+            printf("\nUnknown command Use: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n")
         }
     }
 
