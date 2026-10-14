@@ -12,7 +12,9 @@ It features:</br>
 * real-time auto-advance,</br>
 * and a sleek Terminal User Interface (TUI) dashboard powered by ANSI escape codes.</br>
 
-(https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)
+![Screenshot of working music player-play](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)</br>
+
+![Screenshot of working music player-pause]
 (https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot2.png)
 
 ## Project Overview & Features
