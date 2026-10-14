@@ -14,9 +14,6 @@ It features:</br>
 
 ![Screenshot of working music player-play](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)</br>
 
-![Screenshot of working music player-pause]
-(https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot2.png)
-
 ## Project Overview & Features
 
 ​This player was built as a from-scratch systems programming project to handle 
