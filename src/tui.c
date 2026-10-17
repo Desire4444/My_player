@@ -19,8 +19,10 @@ void tui_draw_dashbard(const Playlist *pl, int current_index, int is_playing){
     printf(COLOR_TEXT "Status:   " COLOR_ACCENT "%s\n", is_playing ? "▶ PLAYING" : "⏸ PAUSED");
 
     if (pl->count > 0 && current_index >= 0 && current_index < pl->count) {
-        printf(COLOR_TEXT "Now Playing: " COLOR_RESET "%s\n", pl->tracks[current_index].filepath );
-        printf(COLOR_TEXT "Track    [%d / %d]\n" COLOR_RESET, current_index + 1, pl->count);
+        printf(COLOR_TEXT "Now Playing: " COLOR_ACCENT "%s - %s\n" COLOR_RESET, 
+               pl->tracks[current_index].artist, 
+               pl->tracks[current_index].title);
+        printf(COLOR_TEXT "Track:       [%d / %d]\n" COLOR_RESET, current_index + 1, pl->count);
     } else {
         printf(COLOR_TEXT "Now Playing: " COLOR_RESET "None\n");
     }

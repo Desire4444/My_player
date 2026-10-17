@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include "scanner.h"
 #include "playlist.h"
+#include "metadata.h"
 
 int is_audio_file(const char *filename){
     const char *ext = strrchr(filename, '.');
@@ -44,12 +45,18 @@ void scan_music_directory_recursive(const char *base_path, Playlist *pl){
         if (S_ISDIR(path_stat.st_mode)) {
             scan_music_directory_recursive(path, pl);
             // It's a directory? then dive into it recursively.......
-        } else if (S_ISREG(path_stat.st_mode)) {
-            // It's a file? check if its a music file.........
-            if (is_audio_file(entry->d_name)) {
-                playlist_add(pl, path, entry->d_name);
-            } 
+        } 
+        else if (S_ISREG(path_stat.st_mode)){
+            // It's a regular file? then check if its music
+            if (is_audio_file(entry->d_name)){
+                // create a temporary track struct extract tags then add it
+                Track new_track;
+                extract_metadata(path, &new_track);
+                playlist_add(pl, new_track.filepath, new_track.filename, new_track.title, new_track.artist);
+            }
+            
         }
+        
     }
     closedir(dir);
 }

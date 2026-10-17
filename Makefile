@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O3 -Iinclude
 LDFLAGS = -lpthread -lm -ldl
 
-SRC = src/main.c src/scanner.c src/playlist.c src/audio.c src/tui.c
+SRC = src/main.c src/scanner.c src/playlist.c src/audio.c src/tui.c src/metadata.c
 OBJ = $(SRC:.c=.o)
 TARGET = music_player
 
