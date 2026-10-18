@@ -65,7 +65,36 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
             }
             mg_http_reply(c, 200, "Content-Type: application/json\r\n", "{\"status\":\"prev\"}");
         }
-        // 5. Serve Static Files (HTML/CSS/JS from web/ directory)
+        // 5. API Endpoint: Set Volume
+        else if (mg_match(hm->uri, mg_str("/api/volume"), NULL)) {
+            char query_buf[32];
+            if (mg_http_get_var(&hm->query, "level", query_buf, sizeof(query_buf)) > 0) {
+                float vol_percent = atof(query_buf);
+                // Convert percentage (0-100) to multiplier (0.0 - 1.0)
+                audio_set_volume(vol_percent / 100.0f);
+            }
+            mg_http_reply(c, 200, "Content-Type: application/json\r\n", "{\"status\":\"volume_updated\"}");
+        }
+        // API Endpoint: Serve Cover Art for Current Track
+        else if (mg_match(hm->uri, mg_str("/api/cover"), NULL)) {
+            Track *current = (current_playlist && current_playlist->count > 0) 
+                             ? &current_playlist->tracks[current_track_index] 
+                             : NULL;
+                             
+            if (current) {
+                printf("[Server DEBUG] /api/cover -> Track: '%s' | Cover Path: '%s'\n", current->title, current->cover_path);
+            } else {
+                printf("[Server DEBUG] /api/cover -> current track is NULL!\n");
+            }
+
+            if (current && current->cover_path[0] != '\0') {
+                mg_http_serve_file(c, hm, current->cover_path, NULL);
+            } else {
+                mg_http_reply(c, 404, "", "No cover");
+            }
+            return;
+        }
+        // 6. Serve Static Files (HTML/CSS/JS from web/ directory)
         else {
             struct mg_http_serve_opts opts = { .root_dir = "web" };
             mg_http_serve_dir(c, hm, &opts);

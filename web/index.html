@@ -1,15 +1,148 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
 <head>
     <meta charset="UTF-8">
-    <title>C Music Player - Web UI</title>
-    <style>
-        body { background-color: #121212; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }
-        h1 { color: #1db954; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Local Music Controller</title>
+    <!-- Tailwind CSS Framework -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom StyleSheet -->
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <h1>C Music Player Backend Running!</h1>
-    <p>Frontend web interface coming up next...</p>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+
+    <!-- Top Header Navigation -->
+    <header class="h-14 shrink-0 border-b border-slate-800/80 px-4 sm:px-6 flex items-center justify-between glass-panel z-10 select-none">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 .895-2 3-2 3 .895 3 2zm12 0c0 1.105-1.343 2-3 2s-3-.895-3-2 .895-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-100 text-xs sm:text-sm tracking-wide leading-tight">C Music Server</h1>
+                <p class="text-[10px] sm:text-xs text-slate-400">Local Web Controller</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <!-- Connection Indicator -->
+            <div class="flex items-center space-x-2 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800/80">
+                <span id="connection-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="connection-status" class="text-[11px] font-medium text-slate-300">Live Server</span>
+            </div>
+
+            <!-- Shortcuts Button -->
+            <button id="shortcuts-btn" title="Keyboard Shortcuts" class="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Application View -->
+    <div class="flex-1 flex overflow-hidden min-h-0">
+        
+        <!-- Player Central Stage -->
+        <main class="flex-1 flex flex-col items-center justify-between p-4 sm:p-6 space-y-4 select-none overflow-hidden max-h-full">
+            
+            <!-- Album Cover Card (Responsive container with max dimensions) -->
+            <div class="flex-1 min-h-0 w-full flex items-center justify-center py-2">
+                <div class="h-full aspect-square max-h-[45vh] max-w-[45vh] min-h-[160px] min-w-[160px] rounded-2xl overflow-hidden shadow-2xl shadow-indigo-950/50 border border-slate-800/80 bg-slate-900 flex items-center justify-center relative group">
+                    <img id="cover-img" src="/api/cover" alt="Album Cover" 
+                         class="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                         onerror="this.style.display='none'; document.getElementById('fallback-icon').style.display='flex';">
+                    <div id="fallback-icon" class="hidden w-full h-full items-center justify-center text-slate-600 bg-slate-900">
+                        <svg class="w-16 h-16 sm:w-20 sm:h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 .895-2 3-2 3 .895 3 2zm12 0c0 1.105-1.343 2-3 2s-3-.895-3-2 .895-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Track Metadata Info -->
+            <div class="text-center space-y-1 max-w-md w-full px-4 shrink-0">
+                <h2 id="title" class="text-xl sm:text-2xl font-bold text-white truncate tracking-tight">Loading track...</h2>
+                <p id="artist" class="text-xs sm:text-sm text-slate-400 truncate">Unknown Artist</p>
+            </div>
+
+            <!-- Progress Bar Section -->
+            <div class="w-full max-w-md space-y-1.5 shrink-0 px-2">
+                <div class="w-full bg-slate-800/80 rounded-full h-1.5 overflow-hidden border border-slate-800/50">
+                    <div id="progress-fill" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 rounded-full transition-all duration-300 ease-linear"></div>
+                </div>
+                <div class="flex justify-between text-[11px] font-mono text-slate-400">
+                    <span id="cur-time">00:00</span>
+                    <span id="tot-time">00:00</span>
+                </div>
+            </div>
+
+            <!-- Playback Control Actions -->
+            <div class="flex items-center justify-center space-x-6 shrink-0 py-1">
+                <button onclick="sendCommand('prev')" title="Previous Track" class="p-2.5 sm:p-3 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition active:scale-95 shadow-lg">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+                </button>
+
+                <button id="play-btn" onclick="togglePlay()" title="Play / Pause" class="p-4 sm:p-5 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white transition active:scale-95 shadow-xl shadow-indigo-600/30">
+                    <svg id="play-icon" class="w-7 h-7 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="pause-icon" class="w-7 h-7 sm:w-8 sm:h-8 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+
+                <button onclick="sendCommand('next')" title="Next Track" class="p-2.5 sm:p-3 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition active:scale-95 shadow-lg">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+
+            <!-- Volume Control Bar -->
+            <div class="w-full max-w-xs flex items-center space-x-3 bg-slate-900/60 p-2 sm:p-2.5 rounded-xl border border-slate-800/80 shrink-0">
+                <button id="mute-btn" onclick="toggleMute()" class="text-slate-400 hover:text-white transition">
+                    <svg id="vol-icon-high" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"></path></svg>
+                    <svg id="vol-icon-mute" class="w-4 h-4 sm:w-5 sm:h-5 hidden text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+                </button>
+                <input type="range" id="volume-slider" min="0" max="100" value="100" oninput="setVolume(this.value)"
+                       class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                <span id="vol-value" class="text-xs font-mono text-slate-400 w-8 text-right">100%</span>
+            </div>
+
+        </main>
+
+        <!-- Right Sidebar (Playlist Queue) -->
+        <aside class="w-72 md:w-80 border-l border-slate-800/80 glass-panel flex-col hidden md:flex shrink-0">
+            <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    <h2 class="font-bold text-slate-200 text-sm">Playlist Queue</h2>
+                </div>
+                <span id="playlist-counter" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">0 Tracks</span>
+            </div>
+
+            <!-- Playlist Status -->
+            <div id="playlist-list" class="flex-1 overflow-y-auto p-3 space-y-1">
+                <div class="text-center py-8 text-slate-500 text-sm">
+                    Connected to local backend.
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Shortcuts Modal -->
+    <div id="shortcuts-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-lg text-white">Keyboard Shortcuts</h3>
+                <button onclick="toggleModal(false)" class="text-slate-400 hover:text-white">&times;</button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between items-center"><span class="text-slate-400">Play / Pause</span><kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-indigo-300">Space</kbd></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">Next Track</span><kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-indigo-300">&rarr;</kbd></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">Previous Track</span><kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-indigo-300">&larr;</kbd></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">Volume Up</span><kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-indigo-300">&uarr;</kbd></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">Volume Down</span><kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-indigo-300">&darr;</kbd></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">Mute / Unmute</span><kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-indigo-300">M</kbd></div>
+            </div>
+            <button onclick="toggleModal(false)" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold transition">Got it</button>
+        </div>
+    </div>
+
+    <!-- Application Script Reference -->
+    <script src="script.js"></script>
 </body>
 </html>

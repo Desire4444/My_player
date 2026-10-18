@@ -9,6 +9,7 @@ typedef struct{
     char filename[256];
     char title[128];
     char artist[128];
+    char cover_path[MAX_PATH_LEN];
 } Track;
 
 // represents in memory que/playlist
@@ -20,7 +21,7 @@ typedef struct{
 
 // playlist management function
 void playlist_init(Playlist *pl, int initial_capacity);
-void playlist_add(Playlist *pl, const char *filepath, const char *filename, const char *title, const char *artist);
+void playlist_add(Playlist *pl, const char *filepath, const char *filename, const char *title, const char *artist, const char *cover_path);
 void Playlist_free(Playlist *pl);
 
 #endif

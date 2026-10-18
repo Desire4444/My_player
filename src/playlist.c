@@ -9,7 +9,7 @@ void playlist_init(Playlist *pl, int initial_capacity){
     pl->capacity = initial_capacity;
 }
 
-void playlist_add(Playlist *pl, const char *filepath, const char *filename, const char *title, const char *artist){
+void playlist_add(Playlist *pl, const char *filepath, const char *filename, const char *title, const char *artist, const char *cover_path){
     // resize array if its full
     if (pl->count >= pl->capacity) {
         pl->capacity *= 2;
@@ -21,13 +21,14 @@ void playlist_add(Playlist *pl, const char *filepath, const char *filename, cons
         pl->tracks = temp;    
     }
 
-    // copy data into the track struct
+    // copy data into the track struct (including cover_path!)
     snprintf(pl->tracks[pl->count].filepath, MAX_PATH_LEN, "%s" , filepath);
     snprintf(pl->tracks[pl->count].filename, 256, "%s", filename);
     snprintf(pl->tracks[pl->count].title, 128, "%s", title);
     snprintf(pl->tracks[pl->count].artist, 128, "%s", artist);
+    snprintf(pl->tracks[pl->count].cover_path, MAX_PATH_LEN, "%s", cover_path); // <-- Added this line
     pl->count++;
-} 
+}
 
 void Playlist_free(Playlist *pl){
     free(pl->tracks);
