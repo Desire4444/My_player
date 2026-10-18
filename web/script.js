@@ -5,6 +5,7 @@ let playlistTracks = [];
 
 let isSeeking = false;
 let totalDuration = 0;
+let activeBrowsePath = "";
 
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return "00:00";
@@ -27,7 +28,11 @@ async function fetchPlaylist() {
 function renderPlaylist() {
     const listContainer = document.getElementById('playlist-list');
     const mobileContainer = document.getElementById('mobile-playlist-list');
-    if (!playlistTracks.length) return;
+    if (!playlistTracks.length) {
+        if (listContainer) listContainer.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">No tracks found. Use 'Open Folder' to pick a music directory.</div>`;
+        if (mobileContainer) mobileContainer.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">No tracks found.</div>`;
+        return;
+    }
 
     const htmlContent = playlistTracks.map((track, idx) => {
         const isActive = idx === lastTrackIndex;
@@ -127,6 +132,71 @@ async function fetchStatus() {
     } catch (err) {
         const dot = document.getElementById('connection-dot');
         if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500";
+    }
+}
+
+// Folder Picker Navigation Functions
+async function browseDirectory(targetPath = "") {
+    try {
+        let res = await fetch(`/api/browse?path=${encodeURIComponent(targetPath)}`);
+        if (!res.ok) return;
+
+        let data = await res.json();
+        activeBrowsePath = data.current_path;
+        document.getElementById('current-browse-path').innerText = activeBrowsePath;
+
+        const listContainer = document.getElementById('folder-list');
+        if (!data.folders || data.folders.length === 0) {
+            listContainer.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">No sub-folders inside this directory.</div>`;
+            return;
+        }
+
+        listContainer.innerHTML = data.folders.map(folder => `
+            <button onclick="browseDirectory('${folder.path.replace(/'/g, "\\'")}')" 
+                class="w-full text-left px-3 py-2 rounded-lg bg-slate-950/60 hover:bg-slate-800 border border-slate-800/80 text-slate-300 hover:text-white transition flex items-center space-x-2 text-xs font-mono">
+                <span class="text-indigo-400">📁</span>
+                <span class="truncate">${folder.name}</span>
+            </button>
+        `).join('');
+    } catch (e) {
+        console.error("Directory browse failed:", e);
+    }
+}
+
+function navigateParentFolder() {
+    if (!activeBrowsePath || activeBrowsePath === '/') return;
+    let parts = activeBrowsePath.split('/').filter(Boolean);
+    parts.pop();
+    browseDirectory('/' + parts.join('/'));
+}
+
+async function confirmSelectFolder() {
+    if (!activeBrowsePath) return;
+    try {
+        await fetch(`/api/select_folder?path=${encodeURIComponent(activeBrowsePath)}`);
+        closeFolderModal();
+        lastTrackIndex = -1;
+        await fetchPlaylist();
+        fetchStatus();
+    } catch (e) {
+        console.error("Failed to select folder:", e);
+    }
+}
+
+function openFolderModal() {
+    const modal = document.getElementById('folder-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    browseDirectory(activeBrowsePath);
+}
+
+function closeFolderModal() {
+    const modal = document.getElementById('folder-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
 }
 
