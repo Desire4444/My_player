@@ -58,15 +58,16 @@ The repository already contains two music files for testing out if it plays on y
 
 ### Running the program
 **Tesing if it outputs sound**
-`./music_player music_test/`
+`./music_player music_test/` 
 </br>
-**Add the url to your broswer**
+**paste the url in your broswer for the GUI**
 `http://localhost:8080`
 
 </br>
 **Add your own path**
-`./music_player /path/to/your/music/folder/`
+`./music_player /path/to/your/music/folder/` | **Inclusion of directory is now optional**
 
 ## Features simple shortcuts
 ![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/shortcuts.png)
 
+### Your welcome to help out as well if you want to
