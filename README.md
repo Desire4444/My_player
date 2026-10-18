@@ -5,12 +5,12 @@
 ​A *custom*, *high-performance*, *lightweight* local music player</br>
 written from scratch in C and built for Linux for the time being.</br>
 Designed with a modular architecture and powered by miniaudio.</br>
+Now it uses a gui in web
 
 It features:</br>
 * a recursive directory scanner,</br>
 * an in-memory dynamic playlist, </br>
 * real-time auto-advance,</br>
-* and a sleek Terminal User Interface (TUI) dashboard powered by ANSI escape codes.</br>
 
 ![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)
 ### Just like me please use a big window for proper line spacing 
@@ -31,11 +31,6 @@ Efficiently allocates and resizes dynamic memory arrays to store and manage trac
 ​**End-of-Track Auto-Advance**:</br>
 Seamlessly transitions to the next track in the playlist when a song finishes naturally.
 
-**ANSI TUI Dashboard**:</br> 
-Provides a real-time, non-scrolling visual dashboard showing player status, current track index, and active filename.</br>
-​Non-Blocking Control Loop: Listens for user commands instantaneously using system polling `poll()` while audio streams in the background.</br>
-Controls, yah as in controls easy!.
-
 ## Architecture & Tech Stack
 
 ​The codebase is split into clean, decoupled functional modules:</br>
@@ -47,7 +42,7 @@ Controls, yah as in controls easy!.
 ## Prerequisites / System Dependencies (#link)
 
 ​To compile and run this player on a **Linux environment**, ensure you have the following installed:</br>
-​Compiler & Build Tools: `gcc` and `make`</br>
+​Compiler & Build Tools: `gcc`, `browswer` and `make`</br>
 ​Audio Subsystem: An active Linux audio server (`PipeWire`, `PulseAudio`, or `ALSA`)</br>
 ​Core Development Libraries: Standard C library, `pthread`, `m`, and `dl` (typically pre-installed on all Linux distros).
 
@@ -62,6 +57,8 @@ The repository already contains two music files for testing out if it plays on y
 ### Running the program
 **Tesing if it outputs sound**
 `./music_player music_test/`
+**Add the url to your broswer**
+`http://localhost:8080`
 </br>
 **Add your own path**
 `./music_player /path/to/your/music/folder/`
