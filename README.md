@@ -13,7 +13,7 @@ It features:</br>
 * real-time auto-advance,</br>
 
 ![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)
-### Just like me please use a big window for proper line spacing 
+### Just like me please use a big window for proper line spacing to test the UI initially
 
 ## Project Overview & Features
 
@@ -57,6 +57,7 @@ The repository already contains two music files for testing out if it plays on y
 ### Running the program
 **Tesing if it outputs sound**
 `./music_player music_test/`
+</br>
 **Add the url to your broswer**
 `http://localhost:8080`
 </br>
