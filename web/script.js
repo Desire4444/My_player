@@ -1,9 +1,8 @@
-/* STREAMING_CHUNK:Initializing application state variables... */
 let isPlaying = false;
 let lastTrackIndex = -1;
 let previousVolume = 100;
+let playlistTracks = [];
 
-/* STREAMING_CHUNK:Defining time string formatting helper... */
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return "00:00";
     let mins = Math.floor(seconds / 60);
@@ -11,17 +10,69 @@ function formatTime(seconds) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-/* STREAMING_CHUNK:Defining status polling handler... */
+async function fetchPlaylist() {
+    try {
+        let res = await fetch('/api/playlist');
+        if (!res.ok) return;
+        playlistTracks = await res.json();
+        renderPlaylist();
+    } catch (e) {
+        console.warn("Playlist endpoint not available or returned error.");
+    }
+}
+
+function renderPlaylist() {
+    const listContainer = document.getElementById('playlist-list');
+    const mobileContainer = document.getElementById('mobile-playlist-list');
+    if (!playlistTracks.length) return;
+
+    const htmlContent = playlistTracks.map((track, idx) => {
+        const isActive = idx === lastTrackIndex;
+        return `
+            <button onclick="playTrack(${idx})" 
+                class="w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between group ${
+                    isActive 
+                    ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-200 shadow-md shadow-indigo-950/30' 
+                    : 'bg-slate-900/40 hover:bg-slate-800/80 border-slate-800/60 text-slate-300 hover:text-white'
+                }">
+                <div class="flex items-center space-x-3 overflow-hidden mr-2">
+                    <span class="text-xs font-mono shrink-0 w-5 text-right ${isActive ? 'text-indigo-400 font-bold' : 'text-slate-500 group-hover:text-slate-400'}">
+                        ${isActive ? '▶' : idx + 1}
+                    </span>
+                    <div class="truncate">
+                        <p class="text-xs font-semibold truncate leading-tight">${track.title || track.filename || `Track ${idx + 1}`}</p>
+                        <p class="text-[10px] text-slate-400 truncate">${track.artist || 'Unknown Artist'}</p>
+                    </div>
+                </div>
+                ${isActive ? '<span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shrink-0"></span>' : ''}
+            </button>
+        `;
+    }).join('');
+
+    if (listContainer) listContainer.innerHTML = htmlContent;
+    if (mobileContainer) mobileContainer.innerHTML = htmlContent;
+}
+
+async function playTrack(index) {
+    try {
+        await fetch(`/api/play?index=${index}`);
+        toggleMobileQueue(false);
+        fetchStatus();
+    } catch (e) {
+        console.error(`Failed to play track index ${index}:`, e);
+    }
+}
+
 async function fetchStatus() {
     try {
         let res = await fetch('/api/status');
         if (!res.ok) throw new Error("Server response error");
-        
+
         let data = await res.json();
 
         // Update Status Indicator
         const dot = document.getElementById('connection-dot');
-        if (dot) dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
 
         // Update Text Information
         document.getElementById('title').innerText = data.title || "Unknown Title";
@@ -57,9 +108,10 @@ async function fetchStatus() {
             }
         }
 
-        // Trigger Cover Image Refresh on Track Change
-        if (data.current - 1 !== lastTrackIndex) {
-            lastTrackIndex = data.current - 1;
+        // Trigger Cover Image & Playlist highlight Refresh on Track Change
+        const currentIdx = data.current - 1;
+        if (currentIdx !== lastTrackIndex) {
+            lastTrackIndex = currentIdx;
             
             let img = document.getElementById('cover-img');
             let fallback = document.getElementById('fallback-icon');
@@ -67,24 +119,23 @@ async function fetchStatus() {
             if (img) img.style.display = 'block';
             if (fallback) fallback.style.display = 'none';
             
-            // Force cache-busting refresh for new track cover art
             if (img) img.src = `/api/cover?t=${new Date().getTime()}`;
+            renderPlaylist();
         }
 
     } catch (err) {
         // Dim connection status on error
         const dot = document.getElementById('connection-dot');
-        if (dot) dot.className = "w-2.5 h-2.5 rounded-full bg-red-500";
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500";
     }
 }
 
-/* STREAMING_CHUNK:Defining playback control functions... */
-async function sendCommand(action) {
+async function sendCommand(endpoint) {
     try {
-        await fetch(`/api/${action}`);
+        await fetch(`/api/${endpoint}`);
         fetchStatus();
     } catch (e) {
-        console.error(`Failed to send command ${action}:`, e);
+        console.error(`Command ${endpoint} failed:`, e);
     }
 }
 
@@ -92,21 +143,23 @@ function togglePlay() {
     sendCommand(isPlaying ? 'pause' : 'resume');
 }
 
-async function setVolume(val) {
+function setVolume(val) {
     document.getElementById('vol-value').innerText = `${Math.round(val)}%`;
     updateVolumeIcon(val);
-    await fetch(`/api/volume?level=${val}`);
+    fetch(`/api/volume?level=${val}`);
 }
 
 function toggleMute() {
     let volumeSlider = document.getElementById('volume-slider');
-    if (volumeSlider) {
-        if (parseInt(volumeSlider.value) > 0) {
-            previousVolume = volumeSlider.value;
-            setVolume(0);
-        } else {
-            setVolume(previousVolume || 100);
-        }
+    if (!volumeSlider) return;
+
+    if (volumeSlider.value > 0) {
+        previousVolume = volumeSlider.value;
+        setVolume(0);
+        volumeSlider.value = 0;
+    } else {
+        setVolume(previousVolume);
+        volumeSlider.value = previousVolume;
     }
 }
 
@@ -114,7 +167,7 @@ function updateVolumeIcon(val) {
     const high = document.getElementById('vol-icon-high');
     const mute = document.getElementById('vol-icon-mute');
     if (high && mute) {
-        if (val <= 0) {
+        if (val == 0) {
             high.classList.add('hidden');
             mute.classList.remove('hidden');
         } else {
@@ -132,48 +185,63 @@ function toggleModal(show) {
     }
 }
 
-/* STREAMING_CHUNK:Attaching DOM event listeners and keyboard shortcuts... */
+function toggleMobileQueue(show) {
+    const modal = document.getElementById('mobile-queue-modal');
+    if (modal) {
+        modal.classList.toggle('hidden', !show);
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    // Ignore input fields
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+    switch (e.key) {
+        case ' ':
+            e.preventDefault();
+            togglePlay();
+            break;
+        case 'ArrowRight':
+            e.preventDefault();
+            sendCommand('next');
+            break;
+        case 'ArrowLeft':
+            e.preventDefault();
+            sendCommand('prev');
+            break;
+        case 'ArrowUp':
+            e.preventDefault();
+            {
+                let slider = document.getElementById('volume-slider');
+                let newVol = Math.min(100, parseInt(slider.value) + 5);
+                slider.value = newVol;
+                setVolume(newVol);
+            }
+            break;
+        case 'ArrowDown':
+            e.preventDefault();
+            {
+                let slider = document.getElementById('volume-slider');
+                let newVol = Math.max(0, parseInt(slider.value) - 5);
+                slider.value = newVol;
+                setVolume(newVol);
+            }
+            break;
+        case 'm':
+        case 'M':
+            toggleMute();
+            break;
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     const shortcutsBtn = document.getElementById('shortcuts-btn');
     if (shortcutsBtn) {
         shortcutsBtn.addEventListener('click', () => toggleModal(true));
     }
 
-    // Keyboard Shortcuts Handler
-    document.addEventListener('keydown', (e) => {
-        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-
-        switch (e.code) {
-            case 'Space':
-                e.preventDefault();
-                togglePlay();
-                break;
-            case 'ArrowLeft':
-                e.preventDefault();
-                sendCommand('prev');
-                break;
-            case 'ArrowRight':
-                e.preventDefault();
-                sendCommand('next');
-                break;
-            case 'ArrowUp':
-                e.preventDefault();
-                let currentVolUp = Math.min(100, parseInt(document.getElementById('volume-slider').value || 100) + 5);
-                setVolume(currentVolUp);
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                let currentVolDown = Math.max(0, parseInt(document.getElementById('volume-slider').value || 0) - 5);
-                setVolume(currentVolDown);
-                break;
-            case 'KeyM':
-                e.preventDefault();
-                toggleMute();
-                break;
-        }
-    });
-
-    // Initialize polling loop
+    // Initialize polling loop and fetch tracklist
     setInterval(fetchStatus, 1000);
     fetchStatus();
+    fetchPlaylist();
 });
