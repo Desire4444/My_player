@@ -12,8 +12,7 @@ It features:</br>
 * an in-memory dynamic playlist, </br>
 * real-time auto-advance,</br>
 
-![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)
-![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot2.png)
+![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/playing.png)
 
 ## Project Overview & Features
 
@@ -22,14 +21,13 @@ local music collection management and multi-threaded audio playback
 without heavy desktop framework bloat.
 
 ​**Recursive Directory Scanner**:</br>
-Automatically crawls through a specified root directory and all its subfolders to discover local audio tracks.
+Automatically crawls through a specified root directory and all its subfolders to discover local audio tracks.</br>
+Now able to select directory from GUI
+![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/directory.png)
 
 **Dynamic In-Memory Playlist**:</br>
 Efficiently allocates and resizes dynamic memory arrays to store and manage track lists.
 ​Robust Audio Playback Engine: Integrates miniaudio for clean cross-platform audio decoding and hardware routing.
-
-​**End-of-Track Auto-Advance**:</br>
-Seamlessly transitions to the next track in the playlist when a song finishes naturally.
 
 ## Architecture & Tech Stack
 
@@ -37,7 +35,11 @@ Seamlessly transitions to the next track in the playlist when a song finishes na
 ​Core C & POSIX: Written in standard C `(gcc)`, utilizing system-level headers (`<dirent.h>`, `<sys/stat.h>`, `<poll.h>`).
 ​Build System: Managed via a clean, dependency-tracked Makefile.
 ​Audio Layer: Powered by **miniaudio** (single-header audio library) handling thread creation (`-lpthread`), math operations (`-lm`), and dynamic loading (`-ldl`).</br>
-​**UI** Layer: Pure ANSI escape sequences for terminal cursor and screen management.
+​**UI** using mangoose It is able to use dynamic web UI featuring flex
+![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/que.png)
+
+​**End-of-Track Auto-Advance**:</br>
+Seamlessly transitions to the next track in the playlist when a song finishes naturally.
 
 ## Prerequisites / System Dependencies (#link)
 
@@ -60,8 +62,11 @@ The repository already contains two music files for testing out if it plays on y
 </br>
 **Add the url to your broswer**
 `http://localhost:8080`
+
 </br>
 **Add your own path**
 `./music_player /path/to/your/music/folder/`
 
+## Features simple shortcuts
+![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/shortcuts.png)
 
