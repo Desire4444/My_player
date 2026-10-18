@@ -29,7 +29,7 @@ dest[j] = '\0';
 
 static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
 if (ev == MG_EV_HTTP_MSG) {
-struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+    struct mg_http_message *hm = (struct mg_http_message *) ev_data;
 
     // 1. API Endpoint: Get Player Status (JSON)
     if (mg_match(hm->uri, mg_str("/api/status"), NULL)) {
@@ -214,9 +214,7 @@ struct mg_http_message *hm = (struct mg_http_message *) ev_data;
         struct mg_http_serve_opts opts = { .root_dir = "web" };
         mg_http_serve_dir(c, hm, &opts);
     }
-}
-
-
+    }
 }
 
 void start_web_server(Playlist *pl, const char *address) {
@@ -242,8 +240,5 @@ while (1) {
         audio_play_track(current_playlist->tracks[current_track_index].filepath);
     }
 }
-
 mg_mgr_free(&mgr);
-
-
 }

@@ -5,7 +5,7 @@
 ​A *custom*, *high-performance*, *lightweight* local music player</br>
 written from scratch in C and built for Linux for the time being.</br>
 Designed with a modular architecture and powered by miniaudio.</br>
-Now it uses a gui in web
+Now it uses a web-app GUI
 
 It features:</br>
 * a recursive directory scanner,</br>
@@ -13,7 +13,7 @@ It features:</br>
 * real-time auto-advance,</br>
 
 ![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)
-### Just like me please use a big window for proper line spacing to test the UI initially
+![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot2.png)
 
 ## Project Overview & Features
 
