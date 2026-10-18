@@ -41,7 +41,7 @@ Efficiently allocates and resizes dynamic memory arrays to store and manage trac
 ​**End-of-Track Auto-Advance**:</br>
 Seamlessly transitions to the next track in the playlist when a song finishes naturally.
 
-## Prerequisites / System Dependencies (#link)
+## Prerequisites / System Dependencies
 
 ​To compile and run this player on a **Linux environment**, ensure you have the following installed:</br>
 ​Compiler & Build Tools: `gcc`, `browswer` and `make`</br>
