@@ -80,3 +80,16 @@ float audio_get_length_seconds(void){
     ma_sound_get_length_in_seconds(&sound, &length);
     return length;
 }
+
+void audio_set_volume(float volume){
+    if (!engine_initialized) return;
+    // clamp volume between 0.0 and 2.0 (200%)
+    if (volume < 0.0f) volume = 0.0f;
+    if (volume > 2.0f) volume = 2.0f;
+    ma_sound_set_volume(&sound, volume);    
+}
+
+float audio_get_volume(void){
+    if (!engine_initialized) return 1.0f;
+    return ma_sound_get_volume(&sound);
+}

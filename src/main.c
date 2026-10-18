@@ -86,6 +86,14 @@ int current_index = 0;
                 audio_play_track(my_playlist.tracks[current_index].filepath);
                 is_playing = 1;
             }
+            else if (command == '+'){
+                float current_volume = audio_get_volume();
+                audio_set_volume(current_volume + 0.1f);
+            }
+            else if (command == '-'){
+                float current_volume = audio_get_volume();
+                audio_set_volume(current_volume - 0.1f);
+            }
             else if (command == 'q') {
                 printf("\033[H\033[J"); // Clean clear on exit
                 printf("Quitting C Music Player...\n");
