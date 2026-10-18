@@ -1,95 +1,127 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
-#include <sys/stat.h>
-#include <stdio.h>
 #include "audio.h"
 
-static ma_engine engine;
-static ma_sound sound;
-static int engine_initialized = 0;
+static ma_engine g_engine;
+static ma_sound g_sound;
+static bool g_engine_initialized = false;
+static bool g_sound_initialized = false;
 
-int audio_engine_init(void) {
-    ma_result result = ma_engine_init(NULL, &engine);
-    if (result != MA_SUCCESS) {
-        fprintf(stderr, "Failed to initialize audio engine (Error: %d)\n", result);
-        return 0;
-    }
-    engine_initialized = 1;
-    return 1;
+bool audio_engine_init(void) {
+ma_result result = ma_engine_init(NULL, &g_engine);
+if (result != MA_SUCCESS) {
+fprintf(stderr, "[Audio Engine] Failed to initialize miniaudio engine.\n");
+return false;
+}
+g_engine_initialized = true;
+return true;
 }
 
-int audio_play_track(const char *filepath){
-    if (!engine_initialized) {
-        fprintf(stderr,"Audio engine not initialized. \n");
-        return 0;
-    }
-
-    // if a sound is already loaded/playing uninit first
-    ma_sound_uninit(&sound);
-
-    // load audio into miniaudio sound object
-    ma_result result = ma_sound_init_from_file(&engine, filepath, 0, NULL, NULL, &sound);
-    if (result != MA_SUCCESS) {
-        fprintf(stderr, "Failed to load track: %s (Error: %d)\n", filepath, result);
-        return 0;
-    }
-
-    // for outputting the sound
-    ma_sound_start(&sound);
-
-    // start playback
-    printf("\n[Now Playing] -> %s\n", filepath);
-    printf("Press Ctrl + C to stop.\n");
-
-    return 1;
+void audio_engine_uninit(void) {
+if (g_sound_initialized) {
+ma_sound_uninit(&g_sound);
+g_sound_initialized = false;
+}
+if (g_engine_initialized) {
+ma_engine_uninit(&g_engine);
+g_engine_initialized = false;
+}
 }
 
-void audio_engine_uninit(void){
-    if (engine_initialized) {
-        ma_sound_uninit(&sound);
-        ma_engine_uninit(&engine);
-        engine_initialized = 0;
-    }
+bool audio_play_track(const char *filepath) {
+if (!g_engine_initialized) return false;
+
+if (g_sound_initialized) {
+    ma_sound_uninit(&g_sound);
+    g_sound_initialized = false;
 }
 
-void audio_pause_track(void){
-    ma_sound_stop(&sound);
-    printf("\n[paused]\n");
+ma_result result = ma_sound_init_from_file(&g_engine, filepath, MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC, NULL, NULL, &g_sound);
+if (result != MA_SUCCESS) {
+    fprintf(stderr, "[Audio Engine] Failed to load audio file: %s\n", filepath);
+    return false;
 }
 
-void audio_resume_track(void){
-    ma_sound_start(&sound);
-    printf("\n[Resumed]\n");
+g_sound_initialized = true;
+ma_sound_start(&g_sound);
+return true;
+
+
 }
 
-int audio_check_at_end(void){
-    if (!engine_initialized) return 0;
-    return ma_sound_at_end(&sound);
+void audio_pause_track(void) {
+if (g_sound_initialized) {
+ma_sound_stop(&g_sound);
+}
 }
 
-float audio_get_cursor_seconds(void){
-    if(!engine_initialized) return 0.0f;
-    float cursor = 0.0f;
-    ma_sound_get_cursor_in_seconds(&sound, &cursor);
-    return cursor;
+void audio_resume_track(void) {
+if (g_sound_initialized) {
+ma_sound_start(&g_sound);
+}
 }
 
-float audio_get_length_seconds(void){
-    if(!engine_initialized) return 0.0f;
-    float length = 0.0f;
-    ma_sound_get_length_in_seconds(&sound, &length);
-    return length;
+void audio_stop_track(void) {
+if (g_sound_initialized) {
+ma_sound_stop(&g_sound);
+ma_sound_seek_to_pcm_frame(&g_sound, 0);
+}
 }
 
-void audio_set_volume(float volume){
-    if (!engine_initialized) return;
-    // clamp volume between 0.0 and 2.0 (200%)
-    if (volume < 0.0f) volume = 0.0f;
-    if (volume > 2.0f) volume = 2.0f;
-    ma_sound_set_volume(&sound, volume);    
+void audio_set_volume(float volume) {
+if (g_sound_initialized) {
+if (volume < 0.0f) volume = 0.0f;
+if (volume > 1.0f) volume = 1.0f;
+ma_sound_set_volume(&g_sound, volume);
+}
 }
 
-float audio_get_volume(void){
-    if (!engine_initialized) return 1.0f;
-    return ma_sound_get_volume(&sound);
+float audio_get_volume(void) {
+if (g_sound_initialized) {
+return ma_sound_get_volume(&g_sound);
+}
+return 1.0f;
+}
+
+void audio_seek_to_seconds(float seconds) {
+if (!g_sound_initialized) return;
+
+ma_uint32 sample_rate = ma_engine_get_sample_rate(&g_engine);
+if (sample_rate == 0) sample_rate = 44100;
+
+ma_uint64 target_frame = (ma_uint64)(seconds * (float)sample_rate);
+ma_sound_seek_to_pcm_frame(&g_sound, target_frame);
+
+
+}
+
+float audio_get_cursor_seconds(void) {
+if (!g_sound_initialized) return 0.0f;
+
+ma_uint32 sample_rate = ma_engine_get_sample_rate(&g_engine);
+if (sample_rate == 0) return 0.0f;
+
+ma_uint64 cursor_frame = 0;
+ma_sound_get_cursor_in_pcm_frames(&g_sound, &cursor_frame);
+return (float)cursor_frame / (float)sample_rate;
+
+
+}
+
+float audio_get_length_seconds(void) {
+if (!g_sound_initialized) return 0.0f;
+
+float length = 0.0f;
+ma_sound_get_length_in_seconds(&g_sound, &length);
+return length;
+
+
+}
+
+bool audio_check_at_end(void) {
+if (!g_sound_initialized) return false;
+return ma_sound_at_end(&g_sound);
 }

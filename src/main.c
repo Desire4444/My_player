@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "scanner.h"
 #include "playlist.h"
 #include "audio.h"

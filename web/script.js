@@ -3,6 +3,9 @@ let lastTrackIndex = -1;
 let previousVolume = 100;
 let playlistTracks = [];
 
+let isSeeking = false;
+let totalDuration = 0;
+
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return "00:00";
     let mins = Math.floor(seconds / 60);
@@ -17,7 +20,7 @@ async function fetchPlaylist() {
         playlistTracks = await res.json();
         renderPlaylist();
     } catch (e) {
-        console.warn("Playlist endpoint not available or returned error.");
+        console.warn("Playlist endpoint not available.");
     }
 }
 
@@ -32,11 +35,11 @@ function renderPlaylist() {
             <button onclick="playTrack(${idx})" 
                 class="w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between group ${
                     isActive 
-                    ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-200 shadow-md shadow-indigo-950/30' 
+                    ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-200 shadow-md' 
                     : 'bg-slate-900/40 hover:bg-slate-800/80 border-slate-800/60 text-slate-300 hover:text-white'
                 }">
                 <div class="flex items-center space-x-3 overflow-hidden mr-2">
-                    <span class="text-xs font-mono shrink-0 w-5 text-right ${isActive ? 'text-indigo-400 font-bold' : 'text-slate-500 group-hover:text-slate-400'}">
+                    <span class="text-xs font-mono shrink-0 w-5 text-right ${isActive ? 'text-indigo-400 font-bold' : 'text-slate-500'}">
                         ${isActive ? '▶' : idx + 1}
                     </span>
                     <div class="truncate">
@@ -70,23 +73,29 @@ async function fetchStatus() {
 
         let data = await res.json();
 
-        // Update Status Indicator
+        // Update connection status
         const dot = document.getElementById('connection-dot');
         if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
 
-        // Update Text Information
+        // Update song info
         document.getElementById('title').innerText = data.title || "Unknown Title";
         document.getElementById('artist').innerText = data.artist || "Unknown Artist";
         document.getElementById('playlist-counter').innerText = `${data.current} / ${data.total} Tracks`;
-        
-        // Update Timers and Seek fill
-        document.getElementById('cur-time').innerText = formatTime(data.cur_time);
-        document.getElementById('tot-time').innerText = formatTime(data.tot_time);
 
-        let percent = data.tot_time > 0 ? (data.cur_time / data.tot_time) * 100 : 0;
-        document.getElementById('progress-fill').style.width = percent + '%';
+        totalDuration = data.tot_time || 0;
+        document.getElementById('tot-time').innerText = formatTime(totalDuration);
 
-        // Sync Volume Slider if not actively focused
+        // Update seek slider position if user is not currently dragging it
+        if (!isSeeking) {
+            document.getElementById('cur-time').innerText = formatTime(data.cur_time);
+            let seekSlider = document.getElementById('seek-slider');
+            if (seekSlider && totalDuration > 0) {
+                let percent = (data.cur_time / totalDuration) * 100;
+                seekSlider.value = percent;
+            }
+        }
+
+        // Sync volume slider
         let volumeSlider = document.getElementById('volume-slider');
         if (volumeSlider && document.activeElement !== volumeSlider) {
             volumeSlider.value = data.volume;
@@ -94,40 +103,54 @@ async function fetchStatus() {
             updateVolumeIcon(data.volume);
         }
 
-        // Sync Play/Pause Button States
+        // Playback state
         isPlaying = data.playing === 1;
         const playIcon = document.getElementById('play-icon');
         const pauseIcon = document.getElementById('pause-icon');
         if (playIcon && pauseIcon) {
-            if (isPlaying) {
-                playIcon.classList.add('hidden');
-                pauseIcon.classList.remove('hidden');
-            } else {
-                playIcon.classList.remove('hidden');
-                pauseIcon.classList.add('hidden');
-            }
+            playIcon.classList.toggle('hidden', isPlaying);
+            pauseIcon.classList.toggle('hidden', !isPlaying);
         }
 
-        // Trigger Cover Image & Playlist highlight Refresh on Track Change
+        // Cover & queue index refresh
         const currentIdx = data.current - 1;
         if (currentIdx !== lastTrackIndex) {
             lastTrackIndex = currentIdx;
-            
             let img = document.getElementById('cover-img');
             let fallback = document.getElementById('fallback-icon');
-            
             if (img) img.style.display = 'block';
             if (fallback) fallback.style.display = 'none';
-            
             if (img) img.src = `/api/cover?t=${new Date().getTime()}`;
             renderPlaylist();
         }
 
     } catch (err) {
-        // Dim connection status on error
         const dot = document.getElementById('connection-dot');
         if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500";
     }
+}
+
+// Handler while dragging scrubber
+function onSeekInput(percent) {
+    isSeeking = true;
+    if (totalDuration > 0) {
+        let currentSecs = (percent / 100) * totalDuration;
+        document.getElementById('cur-time').innerText = formatTime(currentSecs);
+    }
+}
+
+// Handler when scrubber released
+async function onSeekChange(percent) {
+    if (totalDuration > 0) {
+        let targetSecs = (percent / 100) * totalDuration;
+        try {
+            await fetch(`/api/seek?pos=${targetSecs.toFixed(2)}`);
+        } catch (e) {
+            console.error("Seek request failed:", e);
+        }
+    }
+    isSeeking = false;
+    fetchStatus();
 }
 
 async function sendCommand(endpoint) {
@@ -187,13 +210,10 @@ function toggleModal(show) {
 
 function toggleMobileQueue(show) {
     const modal = document.getElementById('mobile-queue-modal');
-    if (modal) {
-        modal.classList.toggle('hidden', !show);
-    }
+    if (modal) modal.classList.toggle('hidden', !show);
 }
 
 document.addEventListener('keydown', (e) => {
-    // Ignore input fields
     if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
     switch (e.key) {
@@ -240,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
         shortcutsBtn.addEventListener('click', () => toggleModal(true));
     }
 
-    // Initialize polling loop and fetch tracklist
     setInterval(fetchStatus, 1000);
     fetchStatus();
     fetchPlaylist();

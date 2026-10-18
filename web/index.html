@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<html lang="en" class="h-full bg-slate-950 text-slate-100 select-none">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C Local Music Controller</title>
-    <!-- Tailwind CSS Framework -->
+    <title>C Music Player</title>
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><path d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/></svg>">
+    <meta name="theme-color" content="#090d16">
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom StyleSheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="h-screen w-screen flex flex-col overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -26,31 +28,26 @@
         </div>
 
         <div class="flex items-center space-x-3">
-            <!-- Connection Status -->
             <div class="flex items-center space-x-2 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800/80">
                 <span id="connection-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span id="connection-status" class="text-[11px] font-medium text-slate-300">Live Server</span>
             </div>
 
-            <!-- Mobile Playlist Queue Toggle Button -->
             <button id="mobile-queue-btn" onclick="toggleMobileQueue(true)" title="Playlist Queue" class="md:hidden p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
             </button>
 
-            <!-- Shortcuts Button -->
             <button id="shortcuts-btn" title="Keyboard Shortcuts" class="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
             </button>
         </div>
     </header>
 
-    <!-- Main Player Body Area -->
+    <!-- Main Content Stage -->
     <div class="flex-1 flex overflow-hidden min-h-0">
-        
-        <!-- Center Player Stage -->
         <main class="flex-1 flex flex-col items-center justify-between p-6 space-y-4 select-none overflow-hidden">
             
-            <!-- Dynamic Album Cover Card -->
+            <!-- Album Cover Card -->
             <div class="flex-1 min-h-0 w-full flex items-center justify-center py-2">
                 <div class="h-full aspect-square max-h-[42vh] max-w-[42vh] min-h-[160px] min-w-[160px] rounded-2xl overflow-hidden shadow-2xl shadow-indigo-950/50 border border-slate-800/80 bg-slate-900 flex items-center justify-center relative group">
                     <img id="cover-img" src="/api/cover" alt="Album Cover" 
@@ -68,10 +65,13 @@
                 <p id="artist" class="text-xs sm:text-sm text-slate-400 truncate">Unknown Artist</p>
             </div>
 
-            <!-- Seek/Progress Bar -->
+            <!-- Interactive Seek/Progress Bar -->
             <div class="w-full max-w-md space-y-1.5 shrink-0 px-2">
-                <div class="w-full bg-slate-800/80 rounded-full h-1.5 overflow-hidden border border-slate-800/50">
-                    <div id="progress-fill" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 rounded-full transition-all duration-300 ease-linear"></div>
+                <div class="relative flex items-center">
+                    <input id="seek-slider" type="range" min="0" max="100" value="0" step="0.1"
+                           oninput="onSeekInput(this.value)"
+                           onchange="onSeekChange(this.value)"
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 focus:outline-none">
                 </div>
                 <div class="flex justify-between text-[11px] font-mono text-slate-400">
                     <span id="cur-time">00:00</span>
@@ -118,14 +118,12 @@
                 <span id="playlist-counter" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">0 Tracks</span>
             </div>
 
-            <!-- Playlist Scrollable Area -->
             <div id="playlist-list" class="flex-1 overflow-y-auto p-3 space-y-1">
                 <div class="text-center py-8 text-slate-500 text-sm">
                     Connected to local backend.
                 </div>
             </div>
         </aside>
-
     </div>
 
     <!-- Mobile Queue Modal -->
@@ -138,11 +136,7 @@
                 </div>
                 <button onclick="toggleMobileQueue(false)" class="text-slate-400 hover:text-white p-1 text-lg font-bold">&times;</button>
             </div>
-            <div id="mobile-playlist-list" class="overflow-y-auto max-h-[60vh] space-y-1 pr-1">
-                <div class="text-center py-8 text-slate-500 text-sm">
-                    Loading playlist...
-                </div>
-            </div>
+            <div id="mobile-playlist-list" class="overflow-y-auto max-h-[60vh] space-y-1 pr-1"></div>
         </div>
     </div>
 
@@ -165,7 +159,6 @@
         </div>
     </div>
 
-    <!-- Application Script Reference -->
     <script src="script.js"></script>
 </body>
 </html>

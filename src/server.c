@@ -5,7 +5,6 @@
 #include "server.h"
 #include "audio.h"
 
-// Global pointer so our event handler can access the playlist and state
 static Playlist *current_playlist = NULL;
 static int current_track_index = 0;
 static int is_playing = 1;
@@ -17,7 +16,7 @@ struct mg_http_message *hm = (struct mg_http_message *) ev_data;
     // 1. API Endpoint: Get Player Status (JSON)
     if (mg_match(hm->uri, mg_str("/api/status"), NULL)) {
         char json_buf[1024];
-        const Track *t = (current_playlist->count > 0) ? &current_playlist->tracks[current_track_index] : NULL;
+        const Track *t = (current_playlist && current_playlist->count > 0) ? &current_playlist->tracks[current_track_index] : NULL;
         
         float cur_time = audio_get_cursor_seconds();
         float tot_time = audio_get_length_seconds();
@@ -28,7 +27,7 @@ struct mg_http_message *hm = (struct mg_http_message *) ev_data;
             t ? t->title : "None",
             t ? t->artist : "Unknown",
             current_track_index + 1,
-            current_playlist->count,
+            current_playlist ? current_playlist->count : 0,
             is_playing,
             cur_time,
             tot_time,
@@ -48,7 +47,7 @@ struct mg_http_message *hm = (struct mg_http_message *) ev_data;
         char query_buf[32];
         if (mg_http_get_var(&hm->query, "index", query_buf, sizeof(query_buf)) > 0) {
             int requested_index = atoi(query_buf);
-            if (requested_index >= 0 && requested_index < current_playlist->count) {
+            if (current_playlist && requested_index >= 0 && requested_index < current_playlist->count) {
                 current_track_index = requested_index;
                 audio_play_track(current_playlist->tracks[current_track_index].filepath);
                 is_playing = 1;
@@ -59,7 +58,7 @@ struct mg_http_message *hm = (struct mg_http_message *) ev_data;
         }
         mg_http_reply(c, 200, "Content-Type: application/json\r\n", "{\"status\":\"ok\"}");
     }
-    // 4. API Endpoint: Play / Pause
+    // 4. API Endpoint: Pause / Resume
     else if (mg_match(hm->uri, mg_str("/api/pause"), NULL)) {
         audio_pause_track();
         is_playing = 0;
@@ -72,7 +71,7 @@ struct mg_http_message *hm = (struct mg_http_message *) ev_data;
     }
     // 5. API Endpoint: Next Track
     else if (mg_match(hm->uri, mg_str("/api/next"), NULL)) {
-        if (current_playlist->count > 0) {
+        if (current_playlist && current_playlist->count > 0) {
             current_track_index = (current_track_index + 1) % current_playlist->count;
             audio_play_track(current_playlist->tracks[current_track_index].filepath);
             is_playing = 1;
@@ -81,34 +80,36 @@ struct mg_http_message *hm = (struct mg_http_message *) ev_data;
     }
     // 6. API Endpoint: Previous Track
     else if (mg_match(hm->uri, mg_str("/api/prev"), NULL)) {
-        if (current_playlist->count > 0) {
+        if (current_playlist && current_playlist->count > 0) {
             current_track_index = (current_track_index - 1 + current_playlist->count) % current_playlist->count;
             audio_play_track(current_playlist->tracks[current_track_index].filepath);
             is_playing = 1;
         }
         mg_http_reply(c, 200, "Content-Type: application/json\r\n", "{\"status\":\"prev\"}");
     }
-    // 7. API Endpoint: Set Volume
+    // 7. API Endpoint: Seek to Timestamp
+    else if (mg_match(hm->uri, mg_str("/api/seek"), NULL)) {
+        char query_buf[32];
+        if (mg_http_get_var(&hm->query, "pos", query_buf, sizeof(query_buf)) > 0) {
+            float target_seconds = atof(query_buf);
+            audio_seek_to_seconds(target_seconds);
+        }
+        mg_http_reply(c, 200, "Content-Type: application/json\r\n", "{\"status\":\"seek_updated\"}");
+    }
+    // 8. API Endpoint: Set Volume
     else if (mg_match(hm->uri, mg_str("/api/volume"), NULL)) {
         char query_buf[32];
         if (mg_http_get_var(&hm->query, "level", query_buf, sizeof(query_buf)) > 0) {
             float vol_percent = atof(query_buf);
-            // Convert percentage (0-100) to multiplier (0.0 - 1.0)
             audio_set_volume(vol_percent / 100.0f);
         }
         mg_http_reply(c, 200, "Content-Type: application/json\r\n", "{\"status\":\"volume_updated\"}");
     }
-    // 8. API Endpoint: Serve Cover Art for Current Track
+    // 9. API Endpoint: Serve Cover Art
     else if (mg_match(hm->uri, mg_str("/api/cover"), NULL)) {
         Track *current = (current_playlist && current_playlist->count > 0) 
                          ? &current_playlist->tracks[current_track_index] 
                          : NULL;
-                         
-        if (current) {
-            printf("[Server DEBUG] /api/cover -> Track: '%s' | Cover Path: '%s'\n", current->title, current->cover_path);
-        } else {
-            printf("[Server DEBUG] /api/cover -> current track is NULL!\n");
-        }
 
         if (current && current->cover_path[0] != '\0') {
             mg_http_serve_file(c, hm, current->cover_path, NULL);
@@ -117,7 +118,7 @@ struct mg_http_message *hm = (struct mg_http_message *) ev_data;
         }
         return;
     }
-    // 9. Serve Static Files (HTML/CSS/JS from web/ directory)
+    // 10. Serve Static Files
     else {
         struct mg_http_serve_opts opts = { .root_dir = "web" };
         mg_http_serve_dir(c, hm, &opts);
@@ -132,22 +133,21 @@ current_playlist = pl;
 struct mg_mgr mgr;
 mg_mgr_init(&mgr);
 
-printf("\n[Web Server] Starting HTTP server at http://localhost:8080 ...\n");
+printf("\n[Web Server] Starting HTTP server at %s ...\n", address);
 if (mg_http_listen(&mgr, address, ev_handler, NULL) == NULL) {
     fprintf(stderr, "Failed to listen on %s\n", address);
     return;
 }
 
 // Start playing the first track automatically if playlist isn't empty
-if (current_playlist->count > 0) {
+if (current_playlist && current_playlist->count > 0) {
     audio_play_track(current_playlist->tracks[0].filepath);
 }
 
-// Run event loop
+// Run main server polling loop
 while (1) {
-    mg_mgr_poll(&mgr, 100); // 100ms poll interval
+    mg_mgr_poll(&mgr, 100);
 
-    // Auto-advance check for when songs end naturally
     if (is_playing && audio_check_at_end()) {
         current_track_index = (current_track_index + 1) % current_playlist->count;
         audio_play_track(current_playlist->tracks[current_track_index].filepath);
