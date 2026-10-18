@@ -12,7 +12,8 @@ It features:</br>
 * real-time auto-advance,</br>
 * and a sleek Terminal User Interface (TUI) dashboard powered by ANSI escape codes.</br>
 
-![Screenshot of working music player-play](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)</br>
+![Screenshot of working my_player](https://github.com/Desire4444/My_player/blob/main/screenshots/screenshot1.png)
+### Just like me please use a big window for proper line spacing 
 
 ## Project Overview & Features
 
@@ -31,8 +32,9 @@ Efficiently allocates and resizes dynamic memory arrays to store and manage trac
 Seamlessly transitions to the next track in the playlist when a song finishes naturally.
 
 **ANSI TUI Dashboard**:</br> 
-Provides a real-time, non-scrolling visual dashboard showing player status, current track index, and active filename.
-​Non-Blocking Control Loop: Listens for user commands instantaneously using system polling `poll()` while audio streams in the background.
+Provides a real-time, non-scrolling visual dashboard showing player status, current track index, and active filename.</br>
+​Non-Blocking Control Loop: Listens for user commands instantaneously using system polling `poll()` while audio streams in the background.</br>
+Controls, yah as in controls easy!.
 
 ## Architecture & Tech Stack
 
