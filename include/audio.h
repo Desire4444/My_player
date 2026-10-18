@@ -21,4 +21,8 @@ void audio_resume_track(void);
 // check if track playing has reached its end
 int audio_check_at_end(void);
 
+// tracking audio length
+float audio_get_cursor_seconds(void);
+float audio_get_length_seconds(void);
+
 #endif

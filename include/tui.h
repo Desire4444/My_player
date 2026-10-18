@@ -4,13 +4,11 @@
 #include "playlist.h"
 
 // ANSII
-#define CLEAR_SCREEN "\033[2J"
-#define MOVE_HOME    "\033[H"
 
 // clears the screen and draws the layout
-void tui_draw_dashbard(const Playlist *pl, int current_index, int is_playing);
+void tui_draw_dashboard(const Playlist *pl, int current_index, int is_playing, float current_time, float total_time);
 
-// updating status of tracks without wiping entire box
-void tui_update_status(const char *track_name, int is_playing);
+// Updates only the progress bar line in-place without clearing the screen
+void tui_update_status(float current_time, float total_time);
 
 #endif

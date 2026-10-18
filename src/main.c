@@ -46,74 +46,77 @@ int main(int argc, char *argv[]){
 
     
     // later an interactive loop will be created for controls
-    int current_index = 0;
+int current_index = 0;
     int is_playing = 1;
     audio_play_track(my_playlist.tracks[current_index].filepath);
 
-    
-    // setup poll struchture to monitor sandard input
     struct pollfd pfd;
-    pfd.fd = 0;
+    pfd.fd = 0; 
     pfd.events = POLLIN;
+
+    int tick_counter = 0;
     
-    // Draw tui dasboard
-    tui_draw_dashbard(&my_playlist, current_index, is_playing);
+    // Draw initial full dashboard once
+    tui_draw_dashboard(&my_playlist, current_index, is_playing, audio_get_cursor_seconds(), audio_get_length_seconds());
+    printf("Command > ");
+    fflush(stdout);
     
     while (1) {
-        // poll stdin with 100 timout so we can check playback status in background
-        int ret = poll(&pfd, 1, 100);
+        int ret = poll(&pfd, 1, 100); // 100ms tick
 
         if (ret > 0) {
-
             char command;
             scanf(" %c", &command);
 
             if (command == 'p') {
                 audio_pause_track();
                 is_playing = 0;
-            } else if (command == 'r') {
+            } 
+            else if (command == 'r') {
                 audio_resume_track();
                 is_playing = 1;
-            } else if (command == 'n') {
+            } 
+            else if (command == 'n') {
                 current_index = (current_index + 1) % my_playlist.count;
-                printf("\nSwitching to track [%d].... \n", current_index + 1);
                 audio_play_track(my_playlist.tracks[current_index].filepath);
                 is_playing = 1;
-            } else if (command == 'q') {
-                printf(CLEAR_SCREEN MOVE_HOME);
-                printf("Quiting....\n");
-                break;
-            } else if (command == 'b') {
+            } 
+            else if (command == 'b') {
                 current_index = (current_index - 1 + my_playlist.count) % my_playlist.count;
-                printf("\nSwitching to track [%d].... \n", current_index + 1);
                 audio_play_track(my_playlist.tracks[current_index].filepath);
                 is_playing = 1;
-            } else {
-                printf("\nUnknown command Use: [p]ause, [r]esume, [n]ext, [b]back [q]uit\n");
             }
-            printf("command > ");
+            else if (command == 'q') {
+                printf("\033[H\033[J"); // Clean clear on exit
+                printf("Quitting C Music Player...\n");
+                break;
+            }
+            
+            // Full redraw on state/track changes
+            tui_draw_dashboard(&my_playlist, current_index, is_playing, audio_get_cursor_seconds(), audio_get_length_seconds());
+            printf("Command > ");
             fflush(stdout);
-
-            // redraw dashoard after every user action
-            tui_draw_dashbard(&my_playlist, current_index, is_playing);
+            tick_counter = 0;
         } else {
-            // No user input?....then check if the song finished naturally
+            // Check if song finished naturally
             if (audio_check_at_end()) {
                 current_index = (current_index + 1) % my_playlist.count;
-                printf("\n[Track Finished] Auto advancing to next track[%d]....\n", current_index + 1);
                 audio_play_track(my_playlist.tracks[current_index].filepath);
                 is_playing = 1;
-
-                // redraw dashboard on every auto advance
-                tui_draw_dashbard(&my_playlist, current_index, is_playing);
+                
+                // Full redraw on auto-advance
+                tui_draw_dashboard(&my_playlist, current_index, is_playing, audio_get_cursor_seconds(), audio_get_length_seconds());
+                printf("Command > ");
+                fflush(stdout);
+                tick_counter = 0;
+            } else if (is_playing) {
+                // Quiet background progress update every ~1 second (no full screen wipe!)
+                tick_counter++;
+                if (tick_counter >= 10) {
+                    tui_update_status(audio_get_cursor_seconds(), audio_get_length_seconds());
+                    tick_counter = 0;
+                }
             }
         }
-    }
-
-    // Clean up memory
-    audio_engine_uninit();
-    Playlist_free(&my_playlist);
-    printf("Exiting the player core cleanly.\n");
-
-    return 0;
+    }    
 }

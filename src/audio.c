@@ -66,3 +66,17 @@ int audio_check_at_end(void){
     if (!engine_initialized) return 0;
     return ma_sound_at_end(&sound);
 }
+
+float audio_get_cursor_seconds(void){
+    if(!engine_initialized) return 0.0f;
+    float cursor = 0.0f;
+    ma_sound_get_cursor_in_seconds(&sound, &cursor);
+    return cursor;
+}
+
+float audio_get_length_seconds(void){
+    if(!engine_initialized) return 0.0f;
+    float length = 0.0f;
+    ma_sound_get_length_in_seconds(&sound, &length);
+    return length;
+}
